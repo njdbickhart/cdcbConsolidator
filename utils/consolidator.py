@@ -6,6 +6,7 @@ Created on Tue Sep 24 13:59:26 2019
 """
 from os import path
 import data
+from collections import defaultdict
 
 fsets = set(['haplo', 'anim', 'bbr', 'eval'])
 
@@ -17,6 +18,7 @@ class Consolidator:
                        'bbr' : None, 
                        'eval' : None }
         self.output = None
+        self.data = defaultdict(animalEntry)
         
     def isValid(self, fname) -> bool:
         if path.exists(fname):
@@ -44,6 +46,8 @@ class Consolidator:
         else:
             return self.output
         
+    def processFile(self, ftype) -> bool:
+        hey = "there"
     
 class animalEntry:
     
