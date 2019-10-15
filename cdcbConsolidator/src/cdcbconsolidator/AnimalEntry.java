@@ -15,6 +15,8 @@ public interface AnimalEntry {
         
     public List<String> getAttributes();
     
+    public void setPrimaryKey(String key);
+    
     public String getPrimaryKey();
     
     public String getValue(String key);
