@@ -67,13 +67,8 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         return 1; // Still working
     }
     
-    public int bufferedRead(BufferedReader handle, int indexCol, int[] dataCols, String[] dataHeads, String delimiter) throws IOException{
-        String line = handle.readLine();
-        if(line == null)
-            return 0; // Done!
+    public int bufferedRead(String[] segs, int indexCol, int[] dataCols, String[] dataHeads, String delimiter) throws IOException{
         
-        line = line.trim();
-        String[] segs = line.split(delimiter);
         
         // take care of data structure and check to see if we write out to the DB
         if(!this.data.containsKey(segs[indexCol])){         
@@ -92,7 +87,7 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         
         // Fill in the attributes of the AnimalEntry class
         for(int i = 0; i < dataCols.length; i++){
-            this.data.get(segs[indexCol]).setValue(dataHeads[i], segs[i]);
+            this.data.get(segs[indexCol]).setValue(dataHeads[i], segs[dataCols[i]]);
         }
         
         return 1; // Still working
