@@ -5,16 +5,22 @@
  */
 package cdcbconsolidator;
 
+import java.io.File;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author dbickhart
  */
 public class CDCBFrame extends javax.swing.JFrame {
-
+    private final JFrame dialogFrame;
     /**
      * Creates new form CDCBFrame
      */
     public CDCBFrame() {
+        this.dialogFrame = new JFrame("Message Box");
         initComponents();
     }
 
@@ -27,6 +33,7 @@ public class CDCBFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jFileChooser = new javax.swing.JFileChooser();
         jTabbedPane1 = new javax.swing.JTabbedPane();
         jPanel1 = new javax.swing.JPanel();
         jSeparator1 = new javax.swing.JSeparator();
@@ -46,8 +53,9 @@ public class CDCBFrame extends javax.swing.JFrame {
         OutputTextField = new javax.swing.JTextField();
         OutputBrowse = new javax.swing.JButton();
         ClearButton = new javax.swing.JButton();
-        jButton1 = new javax.swing.JButton();
+        Convert = new javax.swing.JButton();
         ConvertProgressBar = new javax.swing.JProgressBar();
+        ClearDBBox = new javax.swing.JCheckBox();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -62,7 +70,6 @@ public class CDCBFrame extends javax.swing.JFrame {
         HaploTextField.setToolTipText("");
 
         HaploBrowse.setText("Browse");
-        HaploBrowse.setActionCommand("Browse");
         HaploBrowse.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 HaploBrowseActionPerformed(evt);
@@ -84,16 +91,45 @@ public class CDCBFrame extends javax.swing.JFrame {
         });
 
         BBRBrowse.setText("Browse");
+        BBRBrowse.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BBRBrowseActionPerformed(evt);
+            }
+        });
 
         jLabel5.setText("Output");
 
         OutputBrowse.setText("Browse");
+        OutputBrowse.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                OutputBrowseActionPerformed(evt);
+            }
+        });
 
         ClearButton.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         ClearButton.setText("Clear");
+        ClearButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ClearButtonActionPerformed(evt);
+            }
+        });
 
-        jButton1.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
-        jButton1.setText("Convert");
+        Convert.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        Convert.setText("Convert");
+        Convert.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ConvertActionPerformed(evt);
+            }
+        });
+
+        ConvertProgressBar.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                ConvertProgressBarStateChanged(evt);
+            }
+        });
+
+        ClearDBBox.setText("Clear DB");
+        ClearDBBox.setToolTipText("Check this box if you would like to clear the database and convert the files into the old format without any preceeding data. Warning! Will not load this data into the database for later retrieval!");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -104,37 +140,42 @@ public class CDCBFrame extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                     .addComponent(ConvertProgressBar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(jPanel1Layout.createSequentialGroup()
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jLabel1)
-                                .addComponent(jLabel2)
-                                .addComponent(jLabel3)
-                                .addComponent(jLabel4))
-                            .addGap(18, 18, 18)
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(HaploTextField)
-                                .addComponent(AnimTextField)
-                                .addComponent(EvalTextField)
-                                .addComponent(BBRTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 250, Short.MAX_VALUE))
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(HaploBrowse)
-                                .addComponent(AnimBrowse)
-                                .addComponent(EvalBrowse)
-                                .addComponent(BBRBrowse)))
-                        .addGroup(jPanel1Layout.createSequentialGroup()
-                            .addComponent(jLabel5)
-                            .addGap(30, 30, 30)
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addGroup(jPanel1Layout.createSequentialGroup()
-                                    .addComponent(ClearButton)
-                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jButton1))
-                                .addComponent(OutputTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 250, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(OutputBrowse))))
-                .addContainerGap(16, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel1)
+                                    .addComponent(jLabel2)
+                                    .addComponent(jLabel3)
+                                    .addComponent(jLabel4))
+                                .addGap(18, 18, 18)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(HaploTextField)
+                                    .addComponent(AnimTextField)
+                                    .addComponent(EvalTextField)
+                                    .addComponent(BBRTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 250, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(HaploBrowse)
+                                    .addComponent(AnimBrowse)
+                                    .addComponent(EvalBrowse)
+                                    .addComponent(BBRBrowse)))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel5)
+                                .addGap(30, 30, 30)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(OutputTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 250, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(OutputBrowse))
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(ClearButton)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(ClearDBBox)
+                                        .addGap(28, 28, 28)
+                                        .addComponent(Convert)))))
+                        .addGap(14, 14, 14)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -170,7 +211,9 @@ public class CDCBFrame extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(ClearButton)
-                    .addComponent(jButton1))
+                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(ClearDBBox)
+                        .addComponent(Convert)))
                 .addGap(18, 18, 18)
                 .addComponent(ConvertProgressBar, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -199,16 +242,85 @@ public class CDCBFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void HaploBrowseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_HaploBrowseActionPerformed
-        // TODO add your handling code here:
+        int returnVal = jFileChooser.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File file = jFileChooser.getSelectedFile();
+            try {
+              // What to do with the file, e.g. display it in a TextArea
+                this.HaploTextField.setText(file.getAbsolutePath());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Haplo file for reading!");
+            }
+        }
     }//GEN-LAST:event_HaploBrowseActionPerformed
 
     private void AnimBrowseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AnimBrowseActionPerformed
-        // TODO add your handling code here:
+        int returnVal = jFileChooser.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File file = jFileChooser.getSelectedFile();
+            try {
+              // What to do with the file, e.g. display it in a TextArea
+                this.AnimTextField.setText(file.getAbsolutePath());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Anim file for reading!");
+            }
+        }
     }//GEN-LAST:event_AnimBrowseActionPerformed
 
     private void EvalBrowseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EvalBrowseActionPerformed
-        // TODO add your handling code here:
+        int returnVal = jFileChooser.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File file = jFileChooser.getSelectedFile();
+            try {
+              // What to do with the file, e.g. display it in a TextArea
+                this.EvalTextField.setText(file.getAbsolutePath());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Eval file for reading!");
+            }
+        }
     }//GEN-LAST:event_EvalBrowseActionPerformed
+
+    private void OutputBrowseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OutputBrowseActionPerformed
+        int returnVal = jFileChooser.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File file = jFileChooser.getSelectedFile();
+            try {
+              // What to do with the file, e.g. display it in a TextArea
+                this.OutputTextField.setText(file.getAbsolutePath());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, "Could not create Output file for Writing!");
+            }
+        }
+    }//GEN-LAST:event_OutputBrowseActionPerformed
+
+    private void BBRBrowseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BBRBrowseActionPerformed
+        int returnVal = jFileChooser.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File file = jFileChooser.getSelectedFile();
+            try {
+              // What to do with the file, e.g. display it in a TextArea
+                this.BBRTextField.setText(file.getAbsolutePath());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open BBR file for reading!");
+            }
+        }
+    }//GEN-LAST:event_BBRBrowseActionPerformed
+
+    private void ConvertActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ConvertActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_ConvertActionPerformed
+
+    private void ClearButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClearButtonActionPerformed
+        this.AnimTextField.setText("");
+        this.BBRTextField.setText("");
+        this.EvalTextField.setText("");
+        this.HaploTextField.setText("");
+        this.OutputTextField.setText("");
+    }//GEN-LAST:event_ClearButtonActionPerformed
+
+    private void ConvertProgressBarStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_ConvertProgressBarStateChanged
+        // TODO add your handling code here:
+    }//GEN-LAST:event_ConvertProgressBarStateChanged
 
     /**
      * @param args the command line arguments
@@ -251,6 +363,8 @@ public class CDCBFrame extends javax.swing.JFrame {
     private javax.swing.JButton BBRBrowse;
     private javax.swing.JTextField BBRTextField;
     private javax.swing.JButton ClearButton;
+    private javax.swing.JCheckBox ClearDBBox;
+    private javax.swing.JButton Convert;
     private javax.swing.JProgressBar ConvertProgressBar;
     private javax.swing.JButton EvalBrowse;
     private javax.swing.JTextField EvalTextField;
@@ -258,7 +372,7 @@ public class CDCBFrame extends javax.swing.JFrame {
     private javax.swing.JTextField HaploTextField;
     private javax.swing.JButton OutputBrowse;
     private javax.swing.JTextField OutputTextField;
-    private javax.swing.JButton jButton1;
+    private javax.swing.JFileChooser jFileChooser;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
