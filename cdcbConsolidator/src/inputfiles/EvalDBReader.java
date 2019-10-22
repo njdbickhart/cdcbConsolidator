@@ -65,5 +65,22 @@ public class EvalDBReader extends BufferedFileDBReader<EvalEntry>{
     protected EvalEntry createContents() {
         return new EvalEntry();
     }
+
+    @Override
+    public void straightFileConversion(String file) {
+        try(BufferedReader input = Files.newBufferedReader(Paths.get(file), Charset.defaultCharset())){
+            String line = null;
+            // Clear header
+            for(int x = 0; x < 2; x++)
+                input.readLine();
+            while((line = input.readLine()) != null){
+                String[] segs = line.trim().split("|");
+                String[] dataheads = this.dataHeads(segs[1]);
+                super.straightConvert(segs, 0, this.datacols, dataheads, "|");
+            }
+        }catch(IOException ex){
+            log.log(Level.SEVERE, "Error reading file: " + file, ex);
+        }
+    }
     
 }

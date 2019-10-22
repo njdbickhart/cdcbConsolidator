@@ -50,4 +50,13 @@ public class AnimDBReader extends BufferedFileDBReader<AnimEntry>{
         return new AnimEntry();
     }
 
+    @Override
+    public void straightFileConversion(String file) {
+        try{
+            super.straightConvert(file, 0, 2, 1, "|");
+        }catch(IOException ex){
+            log.log(Level.SEVERE, "Error reading file: " + file, ex);
+        }
+    }
+
 }

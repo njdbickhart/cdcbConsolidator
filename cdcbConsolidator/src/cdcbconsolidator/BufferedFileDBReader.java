@@ -8,7 +8,12 @@ package cdcbconsolidator;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +27,8 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
     protected String tableName;
     protected databaseWrapper db;
     protected Map<String, T> data;
+    
+    public abstract void straightFileConversion(String file);
     
     public abstract void processFile(String file);
     
@@ -37,6 +44,42 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         return input.canRead();
     }
     
+    public void straightConvert(String file, int indexCol, int dataCol, int dataHead, String delimiter) throws IOException{
+        try(BufferedReader input = Files.newBufferedReader(Paths.get(file), Charset.defaultCharset())){
+            String line = null;
+            while((line = input.readLine()) != null){
+                String[] segs = line.trim().split(delimiter);
+                if(!this.data.containsKey(segs[indexCol])){         
+                    this.data.put(segs[indexCol], this.createContents());
+                    this.data.get(segs[indexCol]).setPrimaryKey(segs[indexCol]);
+                }
+                this.data.get(segs[indexCol]).setValue(segs[dataHead], segs[dataCol]);
+            }
+        } 
+    }
+    
+    public void straightConvert(String[] segs, int indexCol, int[] dataCols, String[] dataHeads, String delimiter){
+        
+        if(!this.data.containsKey(segs[indexCol])){         
+            this.data.put(segs[indexCol], this.createContents());
+            this.data.get(segs[indexCol]).setPrimaryKey(segs[indexCol]);
+        }
+        for(int i = 0; i < dataCols.length; i++){
+            this.data.get(segs[indexCol]).setValue(dataHeads[i], segs[dataCols[i]]);
+        }
+            
+        
+    }
+    /**
+     * This function is designed to work on simple melted file formats (ie. the ANIM file)
+     * @param handle
+     * @param indexCol
+     * @param dataCol
+     * @param dataHead
+     * @param delimiter
+     * @return
+     * @throws IOException 
+     */
     public int bufferedRead(BufferedReader handle, int indexCol, int dataCol, int dataHead, String delimiter) throws IOException{
         String line = handle.readLine();
         if(line == null)
@@ -67,6 +110,16 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         return 1; // Still working
     }
     
+    /**
+     * This function is designed to work on multiple column melted files (ie. EVAL file)
+     * @param segs
+     * @param indexCol
+     * @param dataCols
+     * @param dataHeads
+     * @param delimiter
+     * @return
+     * @throws IOException 
+     */
     public int bufferedRead(String[] segs, int indexCol, int[] dataCols, String[] dataHeads, String delimiter) throws IOException{
         
         
@@ -110,5 +163,9 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         return this.data.values().parallelStream()
                 .filter(p -> p.isComplete() == true)
                 .count();
+    }
+    
+    public Map<String, T> getData(){
+        return this.data;
     }
 }
