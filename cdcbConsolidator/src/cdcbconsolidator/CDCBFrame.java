@@ -307,7 +307,12 @@ public class CDCBFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_BBRBrowseActionPerformed
 
     private void ConvertActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ConvertActionPerformed
-        // TODO add your handling code here:
+        // Check for file presence
+        boolean animB = this.AnimTextField.getText().equals("");
+        boolean evalB = this.EvalTextField.getText().equals("");
+        
+        if(!animB || !evalB)
+            JOptionPane.showMessageDialog(this.dialogFrame, "You must specify at least the Anim and Eval files!");
     }//GEN-LAST:event_ConvertActionPerformed
 
     private void ClearButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClearButtonActionPerformed

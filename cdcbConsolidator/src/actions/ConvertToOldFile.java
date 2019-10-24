@@ -5,14 +5,25 @@
  */
 package actions;
 
+import cdcbconsolidator.AnimalEntry;
 import cdcbconsolidator.BufferedFileDBReader;
 import inputfiles.AnimEntry;
 import inputfiles.EvalEntry;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -21,6 +32,8 @@ import java.util.Set;
 public class ConvertToOldFile {
     private final Map<Ftype, BufferedFileDBReader> dataStore = new HashMap<>();
     private final Map<String, Ftype> attributeLookup = new HashMap<>();
+    private final String nl = System.lineSeparator();
+    private static final Logger log = Logger.getLogger(ConvertToOldFile.class.getName());
     
     public ConvertToOldFile(BufferedFileDBReader animReader, BufferedFileDBReader evalReader){
         this.dataStore.put(Ftype.ANIM, animReader);
@@ -35,12 +48,68 @@ public class ConvertToOldFile {
         this.attributeStorage(anim.getAttributes(), Ftype.ANIM);
         this.attributeStorage(eval.getAttributes(), Ftype.EVAL);
         
-        //TODO: Write the method that will generate the output in order of rows present in the map keys of the attribute lookup!
+        // add the ID17 column into the eval file
+        this.attributeLookup.put("ID17", Ftype.EVAL);
+    }
+    
+    public boolean PrintToOutput(String outputFile){
+        try(BufferedWriter output = Files.newBufferedWriter(Paths.get(outputFile), Charset.defaultCharset(), StandardOpenOption.CREATE)){
+            // Get set of header names
+            Set<String> attkeys = this.attributeLookup.keySet();
+            List<String> colOrder = new ArrayList<>(attkeys.size());
+            // Order them by the preset array
+            int count = 0;
+            for(String r : cols){
+                if(attkeys.contains(r))
+                    colOrder.add(r);
+                count++;
+                if(count == 2)
+                    colOrder.add("ID17"); // Otherwise animal ID isn't included!
+            }
+            
+            // Header printing
+            output.write(StrUtils.StrArray.Join(colOrder, ",") + nl);
+            
+            // Now, pull animals in the order they appear in the Eval file
+            List<String> animals = (List<String>) this.dataStore.get(Ftype.EVAL).getData()
+                    .keySet()
+                    .stream()
+                    .collect(Collectors.toList());
+            
+            // Test to make sure that the animals are in the Anim entries as well!
+            if(animals.stream().anyMatch(s -> ! this.dataStore.get(Ftype.ANIM).getData().containsKey(s)))
+                throw new Exception("Error matching animal listings from ANIM and EVAL files! Not identical!");
+            
+            // Loop through animals per row and then condense columns
+            for(String an : animals){
+                List<String> rows = new ArrayList<>(colOrder.size());
+                
+                // Now select values from each entry to fill the row
+                for(String c : colOrder){
+                    String val = this.converter.containsKey(c)? this.converter.get(c) : c;
+                    if(! this.attributeLookup.containsKey(c))
+                        throw new Exception("Error with key lookup!");
+                    AnimalEntry data = (AnimalEntry) this.dataStore.get(this.attributeLookup.get(c))
+                            .getData()
+                            .get(an);
+                    if(c.equals("ID17"))
+                        rows.add(data.getPrimaryKey());
+                    else
+                        rows.add(data.getValue(val));
+                }
+                output.write(StrUtils.StrArray.Join(colOrder, ",") + nl);
+            }
+        }catch(IOException ex){
+            log.log(Level.SEVERE, "Error writing to output!", ex);
+        }catch (Exception ex) {
+            log.log(Level.SEVERE, "Unexpected error!", ex);
+        }
+        return true;
     }
     
     private void attributeStorage(List<String> attributes, Ftype type){
         Set<String> attSet = new HashSet<>(attributes);
-        for(String r : rows){
+        for(String r : cols){
             if(this.converter.containsKey(r)){
                 String t = this.converter.get(r);
                 if(attSet.contains(t))
@@ -54,7 +123,7 @@ public class ConvertToOldFile {
     
     private enum Ftype { ANIM, EVAL}
     
-    private final String[] rows = {"EVAL_BREED", "BLEND_CODE", "ID17", "SEX", "SIRE17",
+    private final String[] cols = {"EVAL_BREED", "BLEND_CODE", "ID17", "SEX", "SIRE17",
         "DAM17", "ANIM_NAME", "NAAB_CODE", "SAMPID", "NM_GEN", "NM_GENREL", "NM_GENSONS",
         "MILK_GENPTA", "FAT_GENPTA", "PRO_GENPTA", "FATPCT_GENPTA", "PROPCT_GENPTA", "PL_GENPTA",
         "SCS_GENPTA", "CM_GEN", "FM_GEN", "GM_GEN", "DPR_GENPTA", "HCR_GENPTA", "CCR_GENPTA",
