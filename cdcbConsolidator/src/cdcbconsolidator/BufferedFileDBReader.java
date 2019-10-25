@@ -47,6 +47,8 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
     public void straightConvert(String file, int indexCol, int dataCol, int dataHead, String delimiter) throws IOException{
         try(BufferedReader input = Files.newBufferedReader(Paths.get(file), Charset.defaultCharset())){
             String line = null;
+            for(int x = 0; x < 2; x++)
+                input.readLine();
             while((line = input.readLine()) != null){
                 String[] segs = line.trim().split(delimiter);
                 if(!this.data.containsKey(segs[indexCol])){         

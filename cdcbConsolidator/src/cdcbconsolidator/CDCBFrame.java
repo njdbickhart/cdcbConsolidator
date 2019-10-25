@@ -5,6 +5,9 @@
  */
 package cdcbconsolidator;
 
+import inputfiles.AnimDBReader;
+import inputfiles.EvalDBReader;
+import actions.ConvertToOldFile;
 import java.io.File;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -55,7 +58,6 @@ public class CDCBFrame extends javax.swing.JFrame {
         ClearButton = new javax.swing.JButton();
         Convert = new javax.swing.JButton();
         ConvertProgressBar = new javax.swing.JProgressBar();
-        ClearDBBox = new javax.swing.JCheckBox();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -128,9 +130,6 @@ public class CDCBFrame extends javax.swing.JFrame {
             }
         });
 
-        ClearDBBox.setText("Clear DB");
-        ClearDBBox.setToolTipText("Check this box if you would like to clear the database and convert the files into the old format without any preceeding data. Warning! Will not load this data into the database for later retrieval!");
-
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -171,8 +170,6 @@ public class CDCBFrame extends javax.swing.JFrame {
                                     .addGroup(jPanel1Layout.createSequentialGroup()
                                         .addComponent(ClearButton)
                                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(ClearDBBox)
-                                        .addGap(28, 28, 28)
                                         .addComponent(Convert)))))
                         .addGap(14, 14, 14)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -211,9 +208,7 @@ public class CDCBFrame extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(ClearButton)
-                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(ClearDBBox)
-                        .addComponent(Convert)))
+                    .addComponent(Convert))
                 .addGap(18, 18, 18)
                 .addComponent(ConvertProgressBar, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -306,13 +301,39 @@ public class CDCBFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_BBRBrowseActionPerformed
 
+    private boolean checkIfFileExists(String file){
+        File test = new File(file);
+        return test.canRead();
+    }
     private void ConvertActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ConvertActionPerformed
         // Check for file presence
-        boolean animB = this.AnimTextField.getText().equals("");
-        boolean evalB = this.EvalTextField.getText().equals("");
+        boolean animB = this.AnimTextField.getText().isEmpty() || this.AnimTextField.getText().equals("");
+        boolean evalB = this.EvalTextField.getText().isEmpty() || this.EvalTextField.getText().equals("");
         
-        if(!animB || !evalB)
+        if(animB || evalB){
             JOptionPane.showMessageDialog(this.dialogFrame, "You must specify at least the Anim and Eval files!");
+            return;
+        }
+        
+        if(!this.checkIfFileExists(this.AnimTextField.getText())
+                || !this.checkIfFileExists(this.EvalTextField.getText())){
+            JOptionPane.showMessageDialog(this.dialogFrame, "Could not find the Anim or Eval files specified!");
+            return;
+        }
+        
+        this.ConvertProgressBar.setIndeterminate(true);
+        // Load files
+        BufferedFileDBReader aReader = new AnimDBReader();
+        aReader.straightFileConversion(this.AnimTextField.getText());
+        
+        BufferedFileDBReader eReader = new EvalDBReader();
+        eReader.straightFileConversion(this.EvalTextField.getText());
+        
+        //Produce output
+        ConvertToOldFile converter = new ConvertToOldFile(aReader, eReader);
+        converter.PrintToOutput(this.OutputTextField.getText());
+        
+        this.ConvertProgressBar.setIndeterminate(false);
     }//GEN-LAST:event_ConvertActionPerformed
 
     private void ClearButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClearButtonActionPerformed
@@ -368,7 +389,6 @@ public class CDCBFrame extends javax.swing.JFrame {
     private javax.swing.JButton BBRBrowse;
     private javax.swing.JTextField BBRTextField;
     private javax.swing.JButton ClearButton;
-    private javax.swing.JCheckBox ClearDBBox;
     private javax.swing.JButton Convert;
     private javax.swing.JProgressBar ConvertProgressBar;
     private javax.swing.JButton EvalBrowse;
