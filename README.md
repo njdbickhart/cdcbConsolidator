@@ -18,20 +18,20 @@ I am planning to add two more tabs, with one tab allowing for simple, guided SQL
 
 Simply double-click the "jar" file to bring up the program window:
 
-![GUI default look](https://github.com/njdbickhart/cdcbConsolidator/images/DefaultGui.PNG)
+![GUI default look](https://github.com/njdbickhart/cdcbConsolidator/tree/master/images/DefaultGui.PNG)
 
 Right now, the program only uses the "Anim File" and "Eval File" fields for data conversion (that's basically all you need to emulate the old format!). To populate these fields, just click the "browse" button to the right of them to bring up a filed chooser:
 
-![File Chooser Window](https://github.com/njdbickhart/cdcbConsolidator/images/file_chooser.PNG)
+![File Chooser Window](https://github.com/njdbickhart/cdcbConsolidator/tree/master/images/file_chooser.PNG)
 
 The file chooser window selects ".csv" files by default, but you can display all files by changing the "Files of type" dropdown menu at the bottom of the window.
 
 In order to run the conversion, you will also need to define a new "Output" file name in the bottom text field. You may use the Browse button to select the location and name the new file. If you enter the text in the text field directly, the file may end up in your "Documents" folder by accident, so it is highly advised that you select the location with the "Browse" button!
 
-![Options entered and ready to go](https://github.com/njdbickhart/cdcbConsolidator/images/Ready_to_go.PNG)
+![Options entered and ready to go](https://github.com/njdbickhart/cdcbConsolidator/tree/master/images/Ready_to_go.PNG)
 
 When you have all three text fields updated as listed in the image above, you are ready for the conversion! Just hit the "Convert" button and let the program do its magic. You can tell that the program has converted the files successfully if the progress bar turns orange as shown:
 
-![Progress finished](https://github.com/njdbickhart/cdcbConsolidator/images/Done.PNG)
+![Progress finished](https://github.com/njdbickhart/cdcbConsolidator/tree/master/images/Done.PNG)
 
 To clear the text fields so that you can enter a new file, just hit the "Clear" button. 
