@@ -77,10 +77,10 @@
                                       </Group>
                                       <EmptySpace type="separate" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                          <Component id="HaploTextField" max="32767" attributes="0"/>
-                                          <Component id="AnimTextField" max="32767" attributes="0"/>
-                                          <Component id="EvalTextField" max="32767" attributes="0"/>
-                                          <Component id="BBRTextField" pref="250" max="32767" attributes="0"/>
+                                          <Component id="BBRTextField" min="-2" pref="250" max="-2" attributes="0"/>
+                                          <Component id="AnimTextField" min="-2" pref="250" max="-2" attributes="0"/>
+                                          <Component id="EvalTextField" alignment="0" min="-2" pref="250" max="-2" attributes="0"/>
+                                          <Component id="HaploTextField" alignment="0" min="-2" pref="250" max="-2" attributes="0"/>
                                       </Group>
                                       <EmptySpace max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="0" attributes="0">
@@ -190,12 +190,24 @@
               <Properties>
                 <Property name="toolTipText" type="java.lang.String" value=""/>
               </Properties>
+              <AuxValues>
+                <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="4"/>
+              </AuxValues>
             </Component>
             <Component class="javax.swing.JTextField" name="AnimTextField">
+              <AuxValues>
+                <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="4"/>
+              </AuxValues>
             </Component>
             <Component class="javax.swing.JTextField" name="EvalTextField">
+              <AuxValues>
+                <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="4"/>
+              </AuxValues>
             </Component>
             <Component class="javax.swing.JTextField" name="BBRTextField">
+              <AuxValues>
+                <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="4"/>
+              </AuxValues>
             </Component>
             <Component class="javax.swing.JButton" name="HaploBrowse">
               <Properties>
@@ -235,6 +247,9 @@
               </Properties>
             </Component>
             <Component class="javax.swing.JTextField" name="OutputTextField">
+              <AuxValues>
+                <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="4"/>
+              </AuxValues>
             </Component>
             <Component class="javax.swing.JButton" name="OutputBrowse">
               <Properties>
@@ -270,6 +285,9 @@
               <Events>
                 <EventHandler event="stateChanged" listener="javax.swing.event.ChangeListener" parameters="javax.swing.event.ChangeEvent" handler="ConvertProgressBarStateChanged"/>
               </Events>
+              <AuxValues>
+                <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="4"/>
+              </AuxValues>
             </Component>
           </SubComponents>
         </Container>

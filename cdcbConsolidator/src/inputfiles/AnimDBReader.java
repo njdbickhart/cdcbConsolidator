@@ -20,6 +20,10 @@ import java.util.logging.Logger;
  */
 public class AnimDBReader extends BufferedFileDBReader<AnimEntry>{
     private static final Logger log = Logger.getLogger(AnimDBReader.class.getName());
+    
+    public AnimDBReader(){
+        super.tableName = "ANIM";
+    }
 
     @Override
     public void processFile(String file) {
@@ -36,7 +40,7 @@ public class AnimDBReader extends BufferedFileDBReader<AnimEntry>{
             
             int reading = 1;
             while(reading == 1)
-                reading = super.bufferedRead(input, 0, 2, 1, "|");
+                reading = super.bufferedRead(input, 0, 2, 1, "\\|");
             
             super.finishBuffer();
             
@@ -51,12 +55,10 @@ public class AnimDBReader extends BufferedFileDBReader<AnimEntry>{
     }
 
     @Override
-    public void straightFileConversion(String file) {
-        try{
-            super.straightConvert(file, 0, 2, 1, "|");
-        }catch(IOException ex){
-            log.log(Level.SEVERE, "Error reading file: " + file, ex);
-        }
+    public void straightFileConversion(String file) throws Exception{
+        
+            super.straightConvert(file, 0, 2, 1, "\\|");
+        
     }
 
 }

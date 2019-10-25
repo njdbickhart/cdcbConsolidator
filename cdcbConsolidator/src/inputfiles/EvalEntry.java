@@ -80,6 +80,8 @@ public class EvalEntry implements AnimalEntry{
     public String getValue(String key) {
         if(this.data.containsKey(key))
             return this.data.get(key);
+        else if(key.equals("ID17"))
+            return this.primaryKey;
         else
             return "";
     }

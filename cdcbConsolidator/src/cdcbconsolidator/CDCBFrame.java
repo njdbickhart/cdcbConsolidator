@@ -8,10 +8,23 @@ package cdcbconsolidator;
 import inputfiles.AnimDBReader;
 import inputfiles.EvalDBReader;
 import actions.ConvertToOldFile;
+import java.awt.Dimension;
+import java.awt.HeadlessException;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.SwingWorker.StateValue;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  *
@@ -19,12 +32,17 @@ import javax.swing.JOptionPane;
  */
 public class CDCBFrame extends javax.swing.JFrame {
     private final JFrame dialogFrame;
+    private static final Logger log = Logger.getLogger(CDCBFrame.class.getName());
     /**
      * Creates new form CDCBFrame
      */
     public CDCBFrame() {
         this.dialogFrame = new JFrame("Message Box");
         initComponents();
+        this.jFileChooser.setPreferredSize(new Dimension(800,600));
+        FileNameExtensionFilter csvFilter = new FileNameExtensionFilter("CSV FILES", "csv");
+        this.jFileChooser.setFileFilter(csvFilter);
+        
     }
 
     /**
@@ -149,10 +167,10 @@ public class CDCBFrame extends javax.swing.JFrame {
                                     .addComponent(jLabel4))
                                 .addGap(18, 18, 18)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(HaploTextField)
-                                    .addComponent(AnimTextField)
-                                    .addComponent(EvalTextField)
-                                    .addComponent(BBRTextField, javax.swing.GroupLayout.DEFAULT_SIZE, 250, Short.MAX_VALUE))
+                                    .addComponent(BBRTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 250, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(AnimTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 250, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(EvalTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 250, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(HaploTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 250, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(HaploBrowse)
@@ -237,16 +255,17 @@ public class CDCBFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void HaploBrowseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_HaploBrowseActionPerformed
-        int returnVal = jFileChooser.showOpenDialog(this);
+        JOptionPane.showMessageDialog(this.dialogFrame, "Feature not implemented yet! Stay tuned kids!");
+        /*int returnVal = jFileChooser.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File file = jFileChooser.getSelectedFile();
-            try {
-              // What to do with the file, e.g. display it in a TextArea
-                this.HaploTextField.setText(file.getAbsolutePath());
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Haplo file for reading!");
-            }
+        File file = jFileChooser.getSelectedFile();
+        try {
+        // What to do with the file, e.g. display it in a TextArea
+        this.HaploTextField.setText(file.getAbsolutePath());
+        } catch (Exception ex) {
+        JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Haplo file for reading!");
         }
+        }*/
     }//GEN-LAST:event_HaploBrowseActionPerformed
 
     private void AnimBrowseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AnimBrowseActionPerformed
@@ -289,16 +308,17 @@ public class CDCBFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_OutputBrowseActionPerformed
 
     private void BBRBrowseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BBRBrowseActionPerformed
-        int returnVal = jFileChooser.showOpenDialog(this);
+        JOptionPane.showMessageDialog(this.dialogFrame, "Feature not implemented yet! Stay tuned kids!");
+        /*int returnVal = jFileChooser.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File file = jFileChooser.getSelectedFile();
-            try {
-              // What to do with the file, e.g. display it in a TextArea
-                this.BBRTextField.setText(file.getAbsolutePath());
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open BBR file for reading!");
-            }
+        File file = jFileChooser.getSelectedFile();
+        try {
+        // What to do with the file, e.g. display it in a TextArea
+        this.BBRTextField.setText(file.getAbsolutePath());
+        } catch (Exception ex) {
+        JOptionPane.showMessageDialog(this.dialogFrame, "Could not open BBR file for reading!");
         }
+        }*/
     }//GEN-LAST:event_BBRBrowseActionPerformed
 
     private boolean checkIfFileExists(String file){
@@ -309,7 +329,7 @@ public class CDCBFrame extends javax.swing.JFrame {
         // Check for file presence
         boolean animB = this.AnimTextField.getText().isEmpty() || this.AnimTextField.getText().equals("");
         boolean evalB = this.EvalTextField.getText().isEmpty() || this.EvalTextField.getText().equals("");
-        
+        log.log(Level.INFO, "Starting method");
         if(animB || evalB){
             JOptionPane.showMessageDialog(this.dialogFrame, "You must specify at least the Anim and Eval files!");
             return;
@@ -320,22 +340,91 @@ public class CDCBFrame extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this.dialogFrame, "Could not find the Anim or Eval files specified!");
             return;
         }
-        
-        this.ConvertProgressBar.setIndeterminate(true);
+        log.log(Level.INFO, "Beginning conversion");
         // Load files
-        BufferedFileDBReader aReader = new AnimDBReader();
-        aReader.straightFileConversion(this.AnimTextField.getText());
         
-        BufferedFileDBReader eReader = new EvalDBReader();
-        eReader.straightFileConversion(this.EvalTextField.getText());
+        converter worker = new converter(this.AnimTextField.getText(), this.EvalTextField.getText(), this.OutputTextField.getText(), this.dialogFrame);
+        worker.addPropertyChangeListener(new progressListener(this.ConvertProgressBar));
+        worker.execute();
+      
+        while(worker.getState() != StateValue.DONE){
+            // Wait
+        }
         
-        //Produce output
-        ConvertToOldFile converter = new ConvertToOldFile(aReader, eReader);
-        converter.PrintToOutput(this.OutputTextField.getText());
-        
-        this.ConvertProgressBar.setIndeterminate(false);
+        log.log(Level.INFO, "Completed routine for conversion");
+                
     }//GEN-LAST:event_ConvertActionPerformed
 
+    private class converter extends SwingWorker<Void, Void>{
+        private final String AnimText;
+        private final String EvalText;
+        private final String OutText;
+        private final JFrame dialogFrame;
+        
+        public converter(String AnimText, String EvalText, String OutText, JFrame dialogFrame){
+            this.AnimText = AnimText;
+            this.EvalText = EvalText;
+            this.OutText = OutText;
+            this.dialogFrame = dialogFrame;
+        }
+        
+        @Override
+        protected Void doInBackground() throws Exception {
+            setProgress(0);
+            BufferedFileDBReader aReader = new AnimDBReader();
+            try {
+                aReader.straightFileConversion(this.AnimText);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, "Error reading from the ANIM file!");
+                log.log(Level.SEVERE, "Error with ANIM file reading", ex);
+            }
+            
+            setProgress(30);
+            BufferedFileDBReader eReader = new EvalDBReader();
+            try {
+                eReader.straightFileConversion(this.EvalText);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, "Error reading from the EVAL file!");
+
+                log.log(Level.SEVERE, "Error with EVAL file reading", ex);
+            }
+            
+            setProgress(60);
+            //Produce output
+            ConvertToOldFile converter = new ConvertToOldFile(aReader, eReader);
+            try {
+                converter.PrintToOutput(this.OutText);
+            } catch(IOException ex){
+                JOptionPane.showMessageDialog(this.dialogFrame, "There was an error printing to the Output file! Please check the log!");
+                log.log(Level.SEVERE, "Error printing to output!", ex);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, ex.getMessage());
+            }
+            
+            setProgress(100);
+            return null;
+        }
+        
+    }
+    
+    private class progressListener implements PropertyChangeListener{
+        private javax.swing.JProgressBar progress;
+        
+        public progressListener(javax.swing.JProgressBar progress){
+            this.progress = progress;
+        }
+
+        @Override
+        public void propertyChange(PropertyChangeEvent pce) {
+            if("progress" == pce.getPropertyName()){
+                int pstate = (Integer) pce.getNewValue();
+                this.progress.setValue(pstate);
+            }
+        }
+        
+    }
+    
+    
     private void ClearButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClearButtonActionPerformed
         this.AnimTextField.setText("");
         this.BBRTextField.setText("");
@@ -385,18 +474,18 @@ public class CDCBFrame extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AnimBrowse;
-    private javax.swing.JTextField AnimTextField;
+    protected javax.swing.JTextField AnimTextField;
     private javax.swing.JButton BBRBrowse;
-    private javax.swing.JTextField BBRTextField;
+    protected javax.swing.JTextField BBRTextField;
     private javax.swing.JButton ClearButton;
     private javax.swing.JButton Convert;
-    private javax.swing.JProgressBar ConvertProgressBar;
+    protected javax.swing.JProgressBar ConvertProgressBar;
     private javax.swing.JButton EvalBrowse;
-    private javax.swing.JTextField EvalTextField;
+    protected javax.swing.JTextField EvalTextField;
     private javax.swing.JButton HaploBrowse;
-    private javax.swing.JTextField HaploTextField;
+    protected javax.swing.JTextField HaploTextField;
     private javax.swing.JButton OutputBrowse;
-    private javax.swing.JTextField OutputTextField;
+    protected javax.swing.JTextField OutputTextField;
     private javax.swing.JFileChooser jFileChooser;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;

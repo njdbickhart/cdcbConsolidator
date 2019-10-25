@@ -52,58 +52,54 @@ public class ConvertToOldFile {
         this.attributeLookup.put("ID17", Ftype.EVAL);
     }
     
-    public boolean PrintToOutput(String outputFile){
-        try(BufferedWriter output = Files.newBufferedWriter(Paths.get(outputFile), Charset.defaultCharset(), StandardOpenOption.CREATE)){
-            // Get set of header names
-            Set<String> attkeys = this.attributeLookup.keySet();
-            List<String> colOrder = new ArrayList<>(attkeys.size());
-            // Order them by the preset array
-            int count = 0;
-            for(String r : cols){
-                if(attkeys.contains(r))
-                    colOrder.add(r);
-                count++;
-                if(count == 2)
-                    colOrder.add("ID17"); // Otherwise animal ID isn't included!
-            }
-            
-            // Header printing
-            output.write(StrUtils.StrArray.Join(colOrder, ",") + nl);
-            
-            // Now, pull animals in the order they appear in the Eval file
-            List<String> animals = (List<String>) this.dataStore.get(Ftype.EVAL).getData()
-                    .keySet()
-                    .stream()
-                    .collect(Collectors.toList());
-            
-            // Test to make sure that the animals are in the Anim entries as well!
-            if(animals.stream().anyMatch(s -> ! this.dataStore.get(Ftype.ANIM).getData().containsKey(s)))
-                throw new Exception("Error matching animal listings from ANIM and EVAL files! Not identical!");
-            
-            // Loop through animals per row and then condense columns
-            for(String an : animals){
-                List<String> rows = new ArrayList<>(colOrder.size());
-                
-                // Now select values from each entry to fill the row
-                for(String c : colOrder){
-                    String val = this.converter.containsKey(c)? this.converter.get(c) : c;
-                    if(! this.attributeLookup.containsKey(c))
-                        throw new Exception("Error with key lookup!");
-                    AnimalEntry data = (AnimalEntry) this.dataStore.get(this.attributeLookup.get(c))
-                            .getData()
-                            .get(an);
-                    if(c.equals("ID17"))
-                        rows.add(data.getPrimaryKey());
-                    else
-                        rows.add(data.getValue(val));
-                }
-                output.write(StrUtils.StrArray.Join(colOrder, ",") + nl);
-            }
-        }catch(IOException ex){
-            log.log(Level.SEVERE, "Error writing to output!", ex);
-        }catch (Exception ex) {
-            log.log(Level.SEVERE, "Unexpected error!", ex);
+    public boolean PrintToOutput(String outputFile) throws IOException, Exception{
+        BufferedWriter output = Files.newBufferedWriter(Paths.get(outputFile), Charset.defaultCharset(), StandardOpenOption.CREATE);
+        // Get set of header names
+        Set<String> attkeys = this.attributeLookup.keySet();
+        List<String> colOrder = new ArrayList<>(attkeys.size());
+        // Order them by the preset array
+        int count = 0;
+        for(String r : cols){
+            if(attkeys.contains(r))
+                colOrder.add(r);
+            count++;
+            //if(count == 2)
+                //colOrder.add("ID17"); // Otherwise animal ID isn't included!
         }
+
+        // Header printing
+        output.write(StrUtils.StrArray.Join(colOrder, ",") + nl);
+
+        // Now, pull animals in the order they appear in the Eval file
+        List<String> animals = (List<String>) this.dataStore.get(Ftype.EVAL).getData()
+                .keySet()
+                .stream()
+                .collect(Collectors.toList());
+
+        // Test to make sure that the animals are in the Anim entries as well!
+        if(animals.stream().anyMatch(s -> ! this.dataStore.get(Ftype.ANIM).getData().containsKey(s)))
+            throw new Exception("Error matching animal listings from ANIM and EVAL files! Not identical!");
+
+        // Loop through animals per row and then condense columns
+        for(String an : animals){
+            List<String> rows = new ArrayList<>(colOrder.size());
+
+            // Now select values from each entry to fill the row
+            for(String c : colOrder){
+                String val = this.converter.containsKey(c)? this.converter.get(c) : c;
+                if(! this.attributeLookup.containsKey(c))
+                    throw new Exception("Error with key lookup!");
+                AnimalEntry data = (AnimalEntry) this.dataStore.get(this.attributeLookup.get(c))
+                        .getData()
+                        .get(an);
+                if(c.equals("ID17"))
+                    rows.add(data.getPrimaryKey());
+                else
+                    rows.add(data.getValue(val));
+            }
+            output.write(StrUtils.StrArray.Join(rows, ",") + nl);
+        }
+        output.close();
         return true;
     }
     

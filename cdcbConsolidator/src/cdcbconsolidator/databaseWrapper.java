@@ -74,13 +74,14 @@ public class databaseWrapper {
             
             // Now to create it in the database
             StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS " + tableName + " (\n");
-            sql.append(primaryKey).append(" text PRIMARY KEY,\n");
+            sql.append(primaryKey).append(" text PRIMARY KEY");
             for(String h : headers)
-                sql.append(h).append(" text,\n");
+                sql.append(",\n").append(h).append(" text");
             
-            sql.append(")\n");
+            sql.append(");\n");
             try{
                 Statement stmt = this.connection.createStatement();
+                log.log(Level.INFO, sql.toString());
                 stmt.execute(sql.toString());
             }catch(SQLException ex){
                 log.log(Level.SEVERE, "Error creating table: " + tableName, ex);
@@ -90,21 +91,27 @@ public class databaseWrapper {
         }        
     }
     
-    public void bufferedInsert(String tableName, List<? extends AnimalEntry> animals ){        
+    public void bufferedInsert(String tableName, List<? extends AnimalEntry> animals ){
+        if(animals.isEmpty()){
+            log.log(Level.INFO, "Animal list was empty!");
+            return;
+        }
+        
         // Obligatory check to make sure that the table exists
         // In practice, I should avoid this! Define the attributes up front
         if(!this.tables.containsKey(tableName))
-            this.createTable(tableName, animals.get(0).getPrimaryKey(), animals.get(0).getAttributes());
+            this.createTable(tableName, "ID17", animals.get(0).getAttributes());
         
         StringBuilder sql = new StringBuilder("INSERT INTO " + tableName + "(");
-        ArrayList<String> attributes = new ArrayList<>(this.tables.keySet());
+        ArrayList<String> attributes = new ArrayList<>(this.tables.get(tableName));
         List<String> questions = attributes.stream()
                 .map(s -> "?")
                 .collect(Collectors.toList());
         
         sql.append(StrUtils.StrArray.Join(attributes, ",")).append(") VALUES(");
-        sql.append(StrUtils.StrArray.Join((ArrayList<String>)questions, ",")).append(")");
+        sql.append(StrUtils.StrArray.Join((ArrayList<String>)questions, ",")).append(");");
         
+        log.log(Level.INFO, sql.toString());
         try{
             PreparedStatement pstmt = this.connection.prepareStatement(sql.toString());
             for(int j = 0; j < animals.size(); j++){

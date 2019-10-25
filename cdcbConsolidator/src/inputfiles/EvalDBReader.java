@@ -19,9 +19,13 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class EvalDBReader extends BufferedFileDBReader<EvalEntry>{
-    private final String[] columns = {"_GenPTA", "_GenREL", "_GenSons", "_DGV", "_Trad"};
+    private final String[] columns = {"_GENPTA", "_GENREL", "_GENSONS", "_DGV", "_TRAD"};
     private final int[] datacols = {2,3,4,5,6};
     private static final Logger log = Logger.getLogger(EvalDBReader.class.getName());
+    
+    public EvalDBReader(){
+        super.tableName = "EVAL";
+    }
 
     @Override
     public void processFile(String file) {
@@ -39,10 +43,13 @@ public class EvalDBReader extends BufferedFileDBReader<EvalEntry>{
             int reading = 1;
             while(reading == 1){
                 String line = input.readLine();
-                if(line == null)
+                if(line == null){
+                    input.close();
                     reading = 0;
+                    break;
+                }
 
-                String[] segs = line.trim().split("|");
+                String[] segs = line.trim().split("\\|", -1);
                 String[] dataheads = this.dataHeads(segs[1]);
                 reading = super.bufferedRead(segs, 0, this.datacols, dataheads, "|");
             }
@@ -67,19 +74,16 @@ public class EvalDBReader extends BufferedFileDBReader<EvalEntry>{
     }
 
     @Override
-    public void straightFileConversion(String file) {
-        try(BufferedReader input = Files.newBufferedReader(Paths.get(file), Charset.defaultCharset())){
-            String line = null;
-            // Clear header
-            for(int x = 0; x < 2; x++)
-                input.readLine();
-            while((line = input.readLine()) != null){
-                String[] segs = line.trim().split("|");
-                String[] dataheads = this.dataHeads(segs[1]);
-                super.straightConvert(segs, 0, this.datacols, dataheads, "|");
-            }
-        }catch(IOException ex){
-            log.log(Level.SEVERE, "Error reading file: " + file, ex);
+    public void straightFileConversion(String file) throws Exception{
+        BufferedReader input = Files.newBufferedReader(Paths.get(file), Charset.defaultCharset());
+        String line = null;
+        // Clear header
+        for(int x = 0; x < 2; x++)
+            input.readLine();
+        while((line = input.readLine()) != null){
+            String[] segs = line.trim().split("\\|", -1);
+            String[] dataheads = this.dataHeads(segs[1]);
+            super.straightConvert(segs, 0, this.datacols, dataheads, "\\|");
         }
     }
     

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,10 +26,11 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
     protected int buffer = 1000;
     protected int count = 0;
     protected String tableName;
-    protected databaseWrapper db;
-    protected Map<String, T> data;
+    protected databaseWrapper db = new databaseWrapper();
+    protected Map<String, T> data = new HashMap<>();
+    private static final Logger log = Logger.getLogger(BufferedFileDBReader.class.getName());
     
-    public abstract void straightFileConversion(String file);
+    public abstract void straightFileConversion(String file) throws Exception;
     
     public abstract void processFile(String file);
     
@@ -48,19 +50,28 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         try(BufferedReader input = Files.newBufferedReader(Paths.get(file), Charset.defaultCharset())){
             String line = null;
             for(int x = 0; x < 2; x++)
-                input.readLine();
+                input.readLine(); // Clear header
             while((line = input.readLine()) != null){
-                String[] segs = line.trim().split(delimiter);
+                String[] segs = line.trim().split(delimiter, -1);
+                if(segs.length -1 < indexCol || segs.length - 1 < dataHead){
+                    log.log(Level.WARNING, "String parsing had fewer columns than expected: " + line);
+                    return;
+                }
                 if(!this.data.containsKey(segs[indexCol])){         
                     this.data.put(segs[indexCol], this.createContents());
                     this.data.get(segs[indexCol]).setPrimaryKey(segs[indexCol]);
                 }
-                this.data.get(segs[indexCol]).setValue(segs[dataHead], segs[dataCol]);
+                if(segs.length - 1 < dataCol){
+                    // data column is otherwise empty!
+                    this.data.get(segs[indexCol]).setValue(segs[dataHead], "");
+                }else{
+                    this.data.get(segs[indexCol]).setValue(segs[dataHead], segs[dataCol]);
+                }
             }
         } 
     }
     
-    public void straightConvert(String[] segs, int indexCol, int[] dataCols, String[] dataHeads, String delimiter){
+    public void straightConvert(String[] segs, int indexCol, int[] dataCols, String[] dataHeads, String delimiter) throws Exception{
         
         if(!this.data.containsKey(segs[indexCol])){         
             this.data.put(segs[indexCol], this.createContents());
@@ -88,7 +99,11 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
             return 0; // Done!
         
         line = line.trim();
-        String[] segs = line.split(delimiter);
+        String[] segs = line.split(delimiter, -1);
+        if(segs.length -1 < indexCol || segs.length - 1 < dataHead){
+            log.log(Level.WARNING, "String parsing had fewer columns than expected: " + line);
+            return 1;
+        }
         
         // take care of data structure and check to see if we write out to the DB
         if(!this.data.containsKey(segs[indexCol])){         
@@ -107,7 +122,10 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         }
         
         // Fill in the attributes of the AnimalEntry class
-        this.data.get(segs[indexCol]).setValue(segs[dataHead], segs[dataCol]);
+        if(segs.length - 1 < dataCol)
+            this.data.get(segs[indexCol]).setValue(segs[dataHead], "");
+        else
+            this.data.get(segs[indexCol]).setValue(segs[dataHead], segs[dataCol]);
         
         return 1; // Still working
     }
@@ -123,7 +141,10 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
      * @throws IOException 
      */
     public int bufferedRead(String[] segs, int indexCol, int[] dataCols, String[] dataHeads, String delimiter) throws IOException{
-        
+        if(segs.length -1 < indexCol || segs.length - 1 < dataHeads.length){
+            log.log(Level.WARNING, "String parsing had fewer columns than expected: " + StrUtils.StrArray.Join(segs, " ") + " " + segs.length);
+            return 1;
+        }
         
         // take care of data structure and check to see if we write out to the DB
         if(!this.data.containsKey(segs[indexCol])){         
@@ -142,7 +163,10 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         
         // Fill in the attributes of the AnimalEntry class
         for(int i = 0; i < dataCols.length; i++){
-            this.data.get(segs[indexCol]).setValue(dataHeads[i], segs[dataCols[i]]);
+            if(i > segs.length - 1)
+                this.data.get(segs[indexCol]).setValue(dataHeads[i], "");
+            else
+                this.data.get(segs[indexCol]).setValue(dataHeads[i], segs[dataCols[i]]);
         }
         
         return 1; // Still working
