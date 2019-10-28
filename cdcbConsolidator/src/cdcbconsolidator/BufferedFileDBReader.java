@@ -8,10 +8,12 @@ package cdcbconsolidator;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,11 +28,16 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
     protected int buffer = 1000;
     protected int count = 0;
     protected String tableName;
+    // Temp file attributes
+    protected File tempFile = null;
+    protected Map<String, Long> anIDOffset = new HashMap<>();
+    protected RandomAccessFile tempStore = null;
+    
     protected databaseWrapper db = new databaseWrapper();
     protected Map<String, T> data = new HashMap<>();
     private static final Logger log = Logger.getLogger(BufferedFileDBReader.class.getName());
     
-    public abstract void straightFileConversion(String file) throws Exception;
+    public abstract boolean straightFileConversion(String file) throws Exception;
     
     public abstract void processFile(String file);
     
@@ -46,8 +53,13 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         return input.canRead();
     }
     
-    public void straightConvert(String file, int indexCol, int dataCol, int dataHead, String delimiter) throws IOException{
+    public boolean straightConvert(String file, int indexCol, int dataCol, int dataHead, String delimiter) throws IOException{
+        this.tempFile = File.createTempFile("temp", null);
+        this.tempFile.deleteOnExit();
+        
+        
         try(BufferedReader input = Files.newBufferedReader(Paths.get(file), Charset.defaultCharset())){
+            this.tempStore = new RandomAccessFile(this.tempFile, "rw");
             String line = null;
             for(int x = 0; x < 2; x++)
                 input.readLine(); // Clear header
@@ -55,7 +67,7 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
                 String[] segs = line.trim().split(delimiter, -1);
                 if(segs.length -1 < indexCol || segs.length - 1 < dataHead){
                     log.log(Level.WARNING, "String parsing had fewer columns than expected: " + line);
-                    return;
+                    return false;
                 }
                 if(!this.data.containsKey(segs[indexCol])){         
                     this.data.put(segs[indexCol], this.createContents());
@@ -67,12 +79,50 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
                 }else{
                     this.data.get(segs[indexCol]).setValue(segs[dataHead], segs[dataCol]);
                 }
+                this.count++;
+                
+                if(this.count >= this.buffer){
+                    writeToDisk();
+                    this.count = 0;
+                }
             }
-        } 
+        }
+        return true;
+    }
+
+    private void writeToDisk() {
+        log.log(Level.FINEST, "Spilling to disk");
+        this.data.entrySet().stream()
+                .filter(s -> s.getValue().isComplete())
+                .forEachOrdered(s -> {
+                    String an = s.getKey();
+                    AnimalEntry t = s.getValue();
+                    List<String> attrs = t.getAttributes();
+                    StringBuilder st = new StringBuilder();
+                    st.append(an);
+                    attrs.forEach((a) -> {
+                        st.append(",").append(t.getValue(a));
+                    });
+                    try {
+                        this.anIDOffset.put(an, this.tempStore.getFilePointer());
+                        this.tempStore.writeBytes(st.append("\n").toString());
+                    } catch (IOException ex) {
+                        log.log(Level.SEVERE, "Error writing to RandomAccess file!", ex);
+                    }
+                });
+        // Emptying all non-complete entries.
+        this.data = this.data.entrySet().stream()
+                .filter(s -> !s.getValue().isComplete())
+                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+        System.gc();
     }
     
-    public void straightConvert(String[] segs, int indexCol, int[] dataCols, String[] dataHeads, String delimiter) throws Exception{
-        
+    public boolean straightConvert(String[] segs, int indexCol, int[] dataCols, String[] dataHeads, String delimiter) throws Exception{
+        if(this.tempFile == null){
+            this.tempFile = File.createTempFile("temp", null);
+            this.tempFile.deleteOnExit();
+            this.tempStore = new RandomAccessFile(this.tempFile, "rw");
+        }
         if(!this.data.containsKey(segs[indexCol])){         
             this.data.put(segs[indexCol], this.createContents());
             this.data.get(segs[indexCol]).setPrimaryKey(segs[indexCol]);
@@ -80,8 +130,13 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         for(int i = 0; i < dataCols.length; i++){
             this.data.get(segs[indexCol]).setValue(dataHeads[i], segs[dataCols[i]]);
         }
-            
+        this.count++;
         
+        if(this.count >= this.buffer){
+            writeToDisk();
+            this.count = 0;
+        }
+        return true;
     }
     /**
      * This function is designed to work on simple melted file formats (ie. the ANIM file)
@@ -193,5 +248,43 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
     
     public Map<String, T> getData(){
         return this.data;
+    }
+    
+    public T getData(String animal){
+        T ret = null;
+        if(this.data.containsKey(animal)){
+            //Easiest case where the data was not spilled to disk
+            ret = this.data.get(animal);
+        }else if(this.anIDOffset.containsKey(animal)){
+            try {
+                this.tempStore.seek(this.anIDOffset.get(animal));
+                String line = this.tempStore.readLine();
+                String[] segs = line.trim().split(",");
+                ret = this.createContents();
+                ret.setPrimaryKey(segs[0]);
+                List<String> attrs = ret.getAttributes();
+                for(int i = 1; i < segs.length; i++){
+                    ret.setValue(attrs.get(i - 1), segs[i]);
+                }
+            } catch (IOException ex) {
+                log.log(Level.SEVERE, "Error reading from temporary file!", ex);
+            }
+        }else{
+            log.log(Level.SEVERE, "Could not find animal ID " + animal + " on disk or in memory!");
+            return null;
+        }        
+        return ret;
+    }
+    
+    public List<String> getAllAnimals(){
+        List<String> ret = this.data.keySet().stream()
+                .collect(Collectors.toList());
+        for(String an : this.anIDOffset.keySet())
+            ret.add(an);
+        return ret;
+    }
+    
+    public void closeTemp() throws IOException{
+        this.tempStore.close();
     }
 }

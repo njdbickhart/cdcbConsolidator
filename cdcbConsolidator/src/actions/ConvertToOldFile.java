@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,7 +52,8 @@ public class ConvertToOldFile {
     }
     
     public boolean PrintToOutput(String outputFile) throws IOException, Exception{
-        BufferedWriter output = Files.newBufferedWriter(Paths.get(outputFile), Charset.defaultCharset(), StandardOpenOption.CREATE);
+        // for some reason, the "default charset" option throws errors when run as a standalone JAR!
+        BufferedWriter output = Files.newBufferedWriter(Paths.get(outputFile), Charset.forName("UTF-8"));
         // Get set of header names
         Set<String> attkeys = this.attributeLookup.keySet();
         List<String> colOrder = new ArrayList<>(attkeys.size());
@@ -71,35 +71,51 @@ public class ConvertToOldFile {
         output.write(StrUtils.StrArray.Join(colOrder, ",") + nl);
 
         // Now, pull animals in the order they appear in the Eval file
-        List<String> animals = (List<String>) this.dataStore.get(Ftype.EVAL).getData()
-                .keySet()
+        List<String> animals = (List<String>) this.dataStore.get(Ftype.EVAL).getAllAnimals()
                 .stream()
+                .sorted()
                 .collect(Collectors.toList());
+        
+        log.log(Level.INFO, "Processing: " + animals.size() + " Animal Entries!");
 
         // Test to make sure that the animals are in the Anim entries as well!
-        if(animals.stream().anyMatch(s -> ! this.dataStore.get(Ftype.ANIM).getData().containsKey(s)))
+        Set<String> tester = new HashSet<>(this.dataStore.get(Ftype.ANIM).getAllAnimals());
+        if(animals.stream().anyMatch(s -> ! tester.contains(s)))
             throw new Exception("Error matching animal listings from ANIM and EVAL files! Not identical!");
 
         // Loop through animals per row and then condense columns
+        int acount = 0;
         for(String an : animals){
             List<String> rows = new ArrayList<>(colOrder.size());
-
+            // With the new logic, make sure that the entries are in separate containers so it doesn't read from disk every time!
+            Map<Ftype, AnimalEntry> working = new HashMap<>();
+            working.put(Ftype.ANIM, this.dataStore.get(Ftype.ANIM).getData(an));
+            working.put(Ftype.EVAL, this.dataStore.get(Ftype.EVAL).getData(an));
             // Now select values from each entry to fill the row
             for(String c : colOrder){
                 String val = this.converter.containsKey(c)? this.converter.get(c) : c;
                 if(! this.attributeLookup.containsKey(c))
                     throw new Exception("Error with key lookup!");
-                AnimalEntry data = (AnimalEntry) this.dataStore.get(this.attributeLookup.get(c))
-                        .getData()
-                        .get(an);
+                AnimalEntry data = (AnimalEntry) working.get(this.attributeLookup.get(c));
                 if(c.equals("ID17"))
                     rows.add(data.getPrimaryKey());
                 else
                     rows.add(data.getValue(val));
             }
-            output.write(StrUtils.StrArray.Join(rows, ",") + nl);
+            String row = StrUtils.StrArray.Join(rows, ",");
+            output.write(row + nl);
+            acount++;
         }
         output.close();
+        log.log(Level.INFO, "Printed: " + acount + " Entries!");
+        
+        this.dataStore.entrySet().stream().forEach(s -> {
+            try {
+                s.getValue().closeTemp();
+            } catch (IOException ex) {
+                log.log(Level.SEVERE, "Error closing temp file in conversion class!", ex);
+            }
+        });
         return true;
     }
     
@@ -165,5 +181,7 @@ public class ConvertToOldFile {
         put("ISPTACT", "IS_PTA_CT");
         put("ISPTAMILK", "IS_PTA_MILK");
         put("SAMPID", "SAMPLE_ID");
+        put("NM_GEN", "NM_GENPTA");
+        put("CM_GEN", "CM_GENPTA");
     }};
 }

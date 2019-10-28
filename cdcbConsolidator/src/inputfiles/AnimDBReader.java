@@ -55,9 +55,9 @@ public class AnimDBReader extends BufferedFileDBReader<AnimEntry>{
     }
 
     @Override
-    public void straightFileConversion(String file) throws Exception{
+    public boolean straightFileConversion(String file) throws Exception{
         
-            super.straightConvert(file, 0, 2, 1, "\\|");
+        return    super.straightConvert(file, 0, 2, 1, "\\|");
         
     }
 

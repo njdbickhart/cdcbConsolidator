@@ -8,6 +8,7 @@ package inputfiles;
 import java.io.File;
 import java.nio.file.FileSystems;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,7 +56,7 @@ public class EvalDBReaderTest {
         System.out.println("processFile");
         String file = "test" + ls + "inputfiles" + ls + "young_test_EVAL.csv";
         EvalDBReader instance = new EvalDBReader();
-        instance.processFile(file);
+        //instance.processFile(file);
         // TODO review the generated test code and remove the default call to fail.
         assert(true);
     }
@@ -77,8 +78,8 @@ public class EvalDBReaderTest {
         String file = "test" + ls + "inputfiles" + ls + "young_test_EVAL.csv";
         EvalDBReader instance = new EvalDBReader();
         instance.straightFileConversion(file);
-        // TODO review the generated test code and remove the default call to fail.
-        assert(this.animalIds.containsAll(instance.getData().keySet()));
+        Set<String> comp = new HashSet<>(instance.getAllAnimals());
+        assert(comp.containsAll(this.animalIds));
     }
     
 }

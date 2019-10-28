@@ -5,6 +5,16 @@
  */
 package cdcbconsolidator;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -12,7 +22,7 @@ import java.util.logging.Logger;
  * @author dbickhart
  */
 public class CdcbConsolidator {
-    public static final String version = "0.0.1";
+    public static final String version = "0.0.2";
     private static final String usage = "CdcbConsolidator version: " + version + System.lineSeparator() +
             "Usage: java -jar CdcbConsolidator.jar -f <haplo file> -a <anim file> -e <eval file> -b <bbr file> -o <output file>" + System.lineSeparator();
     private static final Logger log = Logger.getLogger(CdcbConsolidator.class.getName());
@@ -20,6 +30,7 @@ public class CdcbConsolidator {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
+        //setFileHandler("gui", new String[]{"NONE"}, true);
         try {
                 for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                     if ("Nimbus".equals(info.getName())) {
@@ -46,4 +57,43 @@ public class CdcbConsolidator {
             });
     }
     
+    private static void setFileHandler(String type, String[] args, boolean debug) {
+        // Create a log file and set levels for use with debugger
+        FileHandler handler = null;
+        String datestr = loggerDate();
+        try {
+            handler = new FileHandler("CDCBConsolidator." + type + "." + datestr + ".log");
+            handler.setFormatter(new LogFormat());
+            
+            if(debug){
+                handler.setLevel(Level.INFO);
+            }else{
+                handler.setLevel(Level.INFO);
+            }
+        } catch (IOException | SecurityException ex) {
+            Logger.getLogger(CdcbConsolidator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        Logger mainLog = Logger.getLogger("");
+        // This will display all messages, but the handlers should filter the rest
+        mainLog.setLevel(Level.ALL);
+        for(Handler h : mainLog.getHandlers()){
+            mainLog.removeHandler(h);
+        }
+        mainLog.addHandler(handler);
+        
+        Runtime runtime = Runtime.getRuntime();
+        int mb = 1024 * 1024;
+        
+        // Log input arguments
+        log.log(Level.INFO, "[MAIN] Command line arguments supplied: ");
+        log.log(Level.INFO, StrUtils.StrArray.Join(args, " "));
+        log.log(Level.INFO, "[MAIN] Debug flag set to: " + debug);
+        log.log(Level.INFO, "[MAIN] Runtime Max Memory: " + (runtime.maxMemory() / mb));
+    }
+    
+    private static String loggerDate(){
+        DateFormat dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
+        Date date = new Date();
+        return dateFormat.format(date);
+    }
 }

@@ -74,7 +74,7 @@ public class EvalDBReader extends BufferedFileDBReader<EvalEntry>{
     }
 
     @Override
-    public void straightFileConversion(String file) throws Exception{
+    public boolean straightFileConversion(String file) throws Exception{
         BufferedReader input = Files.newBufferedReader(Paths.get(file), Charset.defaultCharset());
         String line = null;
         // Clear header
@@ -85,6 +85,7 @@ public class EvalDBReader extends BufferedFileDBReader<EvalEntry>{
             String[] dataheads = this.dataHeads(segs[1]);
             super.straightConvert(segs, 0, this.datacols, dataheads, "\\|");
         }
+        return true;
     }
     
 }
