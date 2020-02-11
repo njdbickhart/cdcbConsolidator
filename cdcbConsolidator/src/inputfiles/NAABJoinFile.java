@@ -17,8 +17,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -31,14 +34,17 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class NAABJoinFile {
     private final Logger log = Logger.getLogger(NAABJoinFile.class.getName());
     private final int indexCol;
+    private int colNum;
     private final Map<seventeenByte, List<String>> data;
+    private Map<seventeenByte, Boolean> used;
     private final Path fileName;
     private final boolean hasHeader;
     private String[] header;
     private FType fileType;
     
     public NAABJoinFile(int indexCol, String fileName, boolean hasHeader){
-        this.indexCol = indexCol;
+        // The user has a column index that is "1" based.
+        this.indexCol = indexCol - 1;
         this.fileName = Paths.get(fileName);
         this.data = new HashMap<>();
         this.hasHeader = hasHeader;
@@ -46,8 +52,73 @@ public class NAABJoinFile {
     
     private enum FType { TEXT, XLSX};
     
-    public void loadFile() throws IOException{
+    public int loadFile(int lastCount) throws IOException{
+        // Check file type
+        this.checkFileType();
         
+        // Depending on file type, use one of the loaders
+        switch(this.fileType){
+            case TEXT:
+                return this.loadText(lastCount);
+            case XLSX:
+                return this.loadExcel(lastCount);
+            default:
+                return -1;  // Error code -- shouldn't happen though!
+        }
+    }
+    
+    
+    public int mergeJoinFile(NAABJoinFile comp) throws IOException{
+        // First, join all Strings to keys in this file
+        for(seventeenByte s : this.data.keySet()){
+            List<String> found = comp.consumingGetData(s);
+            this.data.get(s).addAll(found);
+        }
+        
+        // Next deal with elements that were unique to the comp file
+        List<seventeenByte> unused = comp.getUnused();
+        log.log(Level.INFO, "Notice: found " + unused.size() + " extra rows in the query table!");
+        for(seventeenByte s : comp.getUnused()){
+            // Generate fixed width empty list
+            List<String> empty = this.genFixedArrayList();
+            empty.addAll(comp.getData(s));
+            this.data.put(s, empty);
+        }
+        return 1;
+    }
+    
+    protected List<seventeenByte> getUnused(){
+        return this.used.entrySet().stream()
+                .filter(s -> !s.getValue())
+                .map(s -> s.getKey())
+                .collect(Collectors.toList());
+    }
+    
+    protected List<String> genFixedArrayList(){
+        return IntStream.range(0, this.colNum)
+                .mapToObj(s -> "")
+                .collect(Collectors.toList());
+    }
+    
+    protected List<String> getData(seventeenByte key){
+        if(this.data.containsKey(key))
+            return this.data.get(key);
+        else
+            return this.genFixedArrayList();
+    }
+    
+    protected List<String> consumingGetData(seventeenByte key){
+        if(this.data.containsKey(key)){
+            this.used.put(key, true);
+            return this.data.get(key);
+        }else
+            return this.genFixedArrayList();
+    }
+    
+    private void setUsed(){
+        this.used = this.data.keySet()
+                .stream()
+                .collect(Collectors.toMap(Function.identity(), (s) -> Boolean.TRUE));
     }
     
     private int loadText(int lastRowCount) throws IOException{
@@ -57,9 +128,30 @@ public class NAABJoinFile {
             if(this.hasHeader){
                 line = input.readLine();
                 String[] segs = line.split("[\\t,]");
+                System.arraycopy(segs, 0, this.header, 0, segs.length);
+            }
+            
+            boolean hdealt = (this.hasHeader);
+            while((line = input.readLine()) != null){
+                String[] segs = line.split("[\\t,]");
+                this.colNum = segs.length;
+                if(!hdealt){
+                    this.generateGenericHeader(segs.length, lastRowCount);
+                    hdealt = true;
+                }
                 
+                if(segs.length < this.indexCol)
+                    throw new IOException("This worksheet (" + this.fileName.getFileName() + ") did not have a column: " + (this.indexCol + 1) + ". Was the data truncated?");
+                
+                seventeenByte idxEntry = new seventeenByte(segs[this.indexCol]);
+                this.data.put(idxEntry, new ArrayList<>());
+
+                for(int x = 0; x < segs.length; x++){
+                    this.data.get(idxEntry).add(segs[this.indexCol]);
+                }
             }
         }
+        this.setUsed();        
         return 1;
     }
     
@@ -90,8 +182,9 @@ public class NAABJoinFile {
             }
             
             short rowNum = row.getLastCellNum();
+            this.colNum = (int) rowNum;
             if(rowNum < this.indexCol)
-                throw new IOException("This worksheet (" + this.fileName.getFileName() + ") did not have a column: " + this.indexCol + ". Was the data truncated?");
+                throw new IOException("This worksheet (" + this.fileName.getFileName() + ") did not have a column: " + (this.indexCol + 1) + ". Was the data truncated?");
             seventeenByte idxEntry = new seventeenByte(row.getCell(indexCol, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL).toString());
             this.data.put(idxEntry, new ArrayList<>());
             
@@ -100,6 +193,7 @@ public class NAABJoinFile {
             }
         }
         file.close();
+        this.setUsed();
         return 1;
     }
     
