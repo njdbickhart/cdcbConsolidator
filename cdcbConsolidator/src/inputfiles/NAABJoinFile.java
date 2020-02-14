@@ -6,7 +6,10 @@
 package inputfiles;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -22,6 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -52,6 +56,66 @@ public class NAABJoinFile {
     
     private enum FType { TEXT, XLSX};
     
+    public int writeOutFile(String output) throws IOException{
+        // File output type will be determined by the initial file's Ftype enum
+        switch(this.fileType){
+            case TEXT:
+                return this.writeTab(output);
+            case XLSX:
+                return this.writeExcel(output);
+            default:
+                return -1;  // Error code -- shouldn't happen though!
+        }
+    }
+    
+    private int writeTab(String output) throws IOException{
+        try(BufferedWriter o = Files.newBufferedWriter(Paths.get(output), Charset.defaultCharset())){
+            // Deal with header row
+            o.write(StrUtils.StrArray.Join(header, "\t") + System.lineSeparator());
+            
+            // Now write out data
+            for(seventeenByte s : this.data.keySet()){
+                o.write(StrUtils.StrArray.Join(this.data.get(s), "\t") + System.lineSeparator());
+            }            
+        }
+        log.log(Level.INFO, "Tab delimited workbook written to file: " + output);
+        
+        return 1;
+    }
+    
+    private int writeExcel(String output) throws IOException{
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet spreadsheet = workbook.createSheet();
+        
+        XSSFRow row;
+        int rowid = 0;
+        
+        // Deal with header row
+        row = spreadsheet.createRow(rowid++);
+        for(int i = 0; i < this.header.length; i++){
+            Cell cell = row.createCell(i);
+            cell.setCellValue(this.header[i]);
+        }
+        
+        // Now, populate the rest of the cells
+        for(seventeenByte s : this.data.keySet()){
+            row = spreadsheet.createRow(rowid++);
+            List<String> values = this.data.get(s);
+            for(int x = 0; x < values.size(); x++){
+                Cell cell = row.createCell(x);
+                cell.setCellValue(values.get(x));
+            }
+        }
+        
+        FileOutputStream out = new FileOutputStream(new File(output));
+        workbook.write(out);
+        out.close();
+        
+        log.log(Level.INFO, "Excel workbook written to file: " + output);
+        
+        return 1;
+    }
+    
     public int loadFile(int lastCount) throws IOException{
         // Check file type
         this.checkFileType();
@@ -67,7 +131,7 @@ public class NAABJoinFile {
         }
     }
     
-    
+
     public int mergeJoinFile(NAABJoinFile comp) throws IOException{
         // First, join all Strings to keys in this file
         for(seventeenByte s : this.data.keySet()){
@@ -84,7 +148,21 @@ public class NAABJoinFile {
             empty.addAll(comp.getData(s));
             this.data.put(s, empty);
         }
+        
+        // Finally, deal with header array
+        String[] temp = new String[this.header.length + comp.getHeader().length];
+        System.arraycopy(this.header, 0, temp, 0, this.header.length);
+        System.arraycopy(comp.getHeader(), 0, temp, this.header.length, comp.getHeader().length);
+        
         return 1;
+    }
+    
+    protected String[] getHeader(){
+        return this.header;
+    }
+    
+    protected int getIndexCol(){
+        return this.indexCol;
     }
     
     protected List<seventeenByte> getUnused(){
@@ -121,6 +199,10 @@ public class NAABJoinFile {
                 .collect(Collectors.toMap(Function.identity(), (s) -> Boolean.TRUE));
     }
     
+    public int getColNum(){
+        return this.colNum;
+    }
+    
     private int loadText(int lastRowCount) throws IOException{
         try(BufferedReader input = Files.newBufferedReader(fileName, Charset.defaultCharset())){
             String line; 
@@ -128,13 +210,18 @@ public class NAABJoinFile {
             if(this.hasHeader){
                 line = input.readLine();
                 String[] segs = line.split("[\\t,]");
-                System.arraycopy(segs, 0, this.header, 0, segs.length);
+                this.header = new String[segs.length - 1];
+                for(int x = 0; x < segs.length; x++){
+                    if(x == this.indexCol)
+                        continue;
+                    this.header[x] = segs[x];
+                }
             }
             
             boolean hdealt = (this.hasHeader);
             while((line = input.readLine()) != null){
                 String[] segs = line.split("[\\t,]");
-                this.colNum = segs.length;
+                this.colNum = segs.length - 1;
                 if(!hdealt){
                     this.generateGenericHeader(segs.length, lastRowCount);
                     hdealt = true;
@@ -147,7 +234,9 @@ public class NAABJoinFile {
                 this.data.put(idxEntry, new ArrayList<>());
 
                 for(int x = 0; x < segs.length; x++){
-                    this.data.get(idxEntry).add(segs[this.indexCol]);
+                    if(x == this.indexCol)
+                        continue;
+                    this.data.get(idxEntry).add(segs[x]);
                 }
             }
         }
@@ -166,8 +255,10 @@ public class NAABJoinFile {
         if(this.hasHeader){
             XSSFRow hrow = (XSSFRow) rowIterator.next();
             short rowNum = hrow.getLastCellNum();
-            this.header = new String[rowNum];
+            this.header = new String[rowNum - 1];
             for(int x = 0; x < rowNum; x++){
+                if(x == this.indexCol)
+                    continue;
                 this.header[x] = hrow.getCell(x, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).toString();
             }
         }
@@ -182,13 +273,15 @@ public class NAABJoinFile {
             }
             
             short rowNum = row.getLastCellNum();
-            this.colNum = (int) rowNum;
+            this.colNum = (int) rowNum - 1;
             if(rowNum < this.indexCol)
                 throw new IOException("This worksheet (" + this.fileName.getFileName() + ") did not have a column: " + (this.indexCol + 1) + ". Was the data truncated?");
             seventeenByte idxEntry = new seventeenByte(row.getCell(indexCol, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL).toString());
             this.data.put(idxEntry, new ArrayList<>());
             
             for(int x = 0; x < rowNum; x++){
+                if(x == this.indexCol)
+                    continue;
                 this.data.get(idxEntry).add(row.getCell(x, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL).toString());
             }
         }

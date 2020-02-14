@@ -8,6 +8,7 @@ package cdcbconsolidator;
 import inputfiles.AnimDBReader;
 import inputfiles.EvalDBReader;
 import actions.ConvertToOldFile;
+import inputfiles.NAABJoinFile;
 import java.awt.Dimension;
 import java.awt.HeadlessException;
 import java.awt.event.ActionEvent;
@@ -43,6 +44,10 @@ public class CDCBFrame extends javax.swing.JFrame {
         FileNameExtensionFilter csvFilter = new FileNameExtensionFilter("CSV FILES", "csv");
         this.jFileChooser.setFileFilter(csvFilter);
         
+        this.jExcelChooser.setPreferredSize(new Dimension(800, 600));
+        FileNameExtensionFilter excelFilter = new FileNameExtensionFilter("XLS FILES", new String[]{"xls", "xlsx"});
+        this.jExcelChooser.addChoosableFileFilter(csvFilter);
+        this.jExcelChooser.addChoosableFileFilter(excelFilter);
     }
 
     /**
@@ -55,6 +60,7 @@ public class CDCBFrame extends javax.swing.JFrame {
     private void initComponents() {
 
         jFileChooser = new javax.swing.JFileChooser();
+        jExcelChooser = new javax.swing.JFileChooser();
         jTabbedPane1 = new javax.swing.JTabbedPane();
         jPanel1 = new javax.swing.JPanel();
         jSeparator1 = new javax.swing.JSeparator();
@@ -473,7 +479,9 @@ public class CDCBFrame extends javax.swing.JFrame {
         converter worker = new converter(this.AnimTextField.getText(), this.EvalTextField.getText(), this.OutputTextField.getText());
         worker.addPropertyChangeListener(new progressListener(this.ConvertProgressBar));
         try {
-            worker.execute();
+            SwingUtilities.invokeLater(() -> {
+                worker.execute();
+            });            
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this.dialogFrame, "Ran into an error! " + ex.getMessage());
             log.log(Level.SEVERE, "Error in execution!", ex);
@@ -560,25 +568,151 @@ public class CDCBFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_ClearButtonActionPerformed
 
     private void ConvertProgressBarStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_ConvertProgressBarStateChanged
-        // TODO add your handling code here:
+        
     }//GEN-LAST:event_ConvertProgressBarStateChanged
 
     private void naabRefFileFileBrowser(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_naabRefFileFileBrowser
-        // TODO add your handling code here:
+        int returnVal = this.jExcelChooser.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File file = jFileChooser.getSelectedFile();
+            try {
+              // What to do with the file, e.g. display it in a TextArea
+                this.naabRefFileTextField.setText(file.getAbsolutePath());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Ref file for reading!");
+            }
+        }
     }//GEN-LAST:event_naabRefFileFileBrowser
 
     private void naabQueryFileBrowser(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_naabQueryFileBrowser
-        // TODO add your handling code here:
+        int returnVal = this.jExcelChooser.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File file = jFileChooser.getSelectedFile();
+            try {
+              // What to do with the file, e.g. display it in a TextArea
+                this.naabQueryFileTextField.setText(file.getAbsolutePath());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Eval file for reading!");
+            }
+        }
     }//GEN-LAST:event_naabQueryFileBrowser
 
     private void naabOutputFileBrowser(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_naabOutputFileBrowser
-        // TODO add your handling code here:
+        int returnVal = this.jExcelChooser.showOpenDialog(this);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File file = jFileChooser.getSelectedFile();
+            try {
+              // What to do with the file, e.g. display it in a TextArea
+                this.OutputTextField.setText(file.getAbsolutePath());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Eval file for reading!");
+            }
+        }
     }//GEN-LAST:event_naabOutputFileBrowser
 
     private void naabFileJoinRun(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_naabFileJoinRun
-        // TODO add your handling code here:
+        // check for file presence and ID column values
+        boolean refB = this.naabRefFileTextField.getText().isEmpty() || this.naabRefFileTextField.getText().equals("");
+        boolean querB = this.naabQueryFileTextField.getText().isEmpty() || this.naabQueryFileTextField.getText().equals("");        
+        if(refB || querB){
+            JOptionPane.showMessageDialog(this.dialogFrame, "You must specify a reference and query file!");
+            return;
+        }
+        boolean outB = this.naabConvertOutField.getText().isEmpty() || this.naabConvertOutField.getText().equals("");
+        if(outB){
+            JOptionPane.showMessageDialog(this.dialogFrame, "You must specify an output file!");
+            return;
+        }
+        
+        int refIdx = (int) this.naabRefFileSpinner.getValue();
+        int querIdx = (int) this.naabQueryFileSpinner.getValue();
+        if(refIdx < 1 || querIdx < 1){
+            JOptionPane.showMessageDialog(this.dialogFrame, "Please select a number for the ID Column that is at least 1 or greater!");
+            return;
+        }
+        
+        log.log(Level.INFO, "Input Files entered");
+        
+        if(!this.checkIfFileExists(this.naabRefFileTextField.getText())
+                || !this.checkIfFileExists(this.naabQueryFileTextField.getText())){
+            JOptionPane.showMessageDialog(this.dialogFrame, "Could not find the Ref or Query files specified!");
+            return;
+        }
+        log.log(Level.INFO, "Beginning conversion");
+        
+        boolean RefHead = this.naabRefHeaderCheck.isSelected();
+        boolean QuerHead = this.naabQueryHeaderCheck.isSelected();
+        
+        joiner join = new joiner(this.naabRefFileTextField.getText(), this.naabQueryFileTextField.getText(),
+                this.naabConvertOutField.getText(), refIdx, querIdx, RefHead, QuerHead);
+        
+        try {
+            SwingUtilities.invokeLater(() -> {
+                join.execute();
+            });            
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this.dialogFrame, "Ran into an error! " + ex.getMessage());
+            log.log(Level.SEVERE, "Error in execution!", ex);
+        }
+      
+        while(join.getState() != StateValue.DONE){
+            // Wait
+        }
+        
+        log.log(Level.INFO, "Completed Join routine");
     }//GEN-LAST:event_naabFileJoinRun
 
+    private class joiner extends SwingWorker<Void, Void>{
+        private final String RefText;
+        private final String QuerText;
+        private final String OutText;
+        private final int RefCol;
+        private final int QuerCol;
+        private final boolean RefHead;
+        private final boolean QuerHead;
+        
+        public joiner(String RefText, String QuerText, String OutText, int RefCol, int QuerCol, boolean RefHead, boolean QuerHead){
+            this.RefText = RefText;
+            this.QuerText = QuerText;
+            this.OutText = OutText;
+            this.RefCol = RefCol;
+            this.QuerCol = QuerCol;
+            this.RefHead = RefHead;
+            this.QuerHead = QuerHead;
+        }
+        
+        @Override
+        protected Void doInBackground() throws Exception {
+            setProgress(0);
+            NAABJoinFile RefFile = new NAABJoinFile(this.RefCol, this.RefText, this.RefHead);
+            int state = RefFile.loadFile(0);
+            if(state == 1){
+                log.log(Level.INFO, "Successfully read Reference file!");
+            }
+            
+            setProgress(30);
+            NAABJoinFile QuerFile = new NAABJoinFile(this.QuerCol, this.QuerText, this.QuerHead);
+            state = QuerFile.loadFile(RefFile.getColNum());
+            if(state ==  1){
+                log.log(Level.INFO, "Successfully read Query file!");
+            }
+            
+            setProgress(60);
+            //Perform the merger
+            RefFile.mergeJoinFile(QuerFile);
+            
+            try {
+                RefFile.writeOutFile(OutText);
+            } catch (Exception exception) {
+                log.log(Level.SEVERE, "Error writing to output!", exception);
+                throw new Exception("Error in output!");
+            }           
+            
+            setProgress(100);
+            return null;
+        }
+        
+    }
     /**
      * @param args the command line arguments
      */
@@ -629,6 +763,7 @@ public class CDCBFrame extends javax.swing.JFrame {
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
+    private javax.swing.JFileChooser jExcelChooser;
     private javax.swing.JFileChooser jFileChooser;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
