@@ -574,12 +574,13 @@ public class CDCBFrame extends javax.swing.JFrame {
     private void naabRefFileFileBrowser(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_naabRefFileFileBrowser
         int returnVal = this.jExcelChooser.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File file = jFileChooser.getSelectedFile();
+            File file = jExcelChooser.getSelectedFile();
             try {
               // What to do with the file, e.g. display it in a TextArea
                 this.naabRefFileTextField.setText(file.getAbsolutePath());
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Ref file for reading!");
+                JOptionPane.showMessageDialog(this.dialogFrame, ex.toString());
             }
         }
     }//GEN-LAST:event_naabRefFileFileBrowser
@@ -587,12 +588,12 @@ public class CDCBFrame extends javax.swing.JFrame {
     private void naabQueryFileBrowser(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_naabQueryFileBrowser
         int returnVal = this.jExcelChooser.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File file = jFileChooser.getSelectedFile();
+            File file = jExcelChooser.getSelectedFile();
             try {
               // What to do with the file, e.g. display it in a TextArea
                 this.naabQueryFileTextField.setText(file.getAbsolutePath());
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Eval file for reading!");
+                JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Query file for reading!");
             }
         }
     }//GEN-LAST:event_naabQueryFileBrowser
@@ -600,10 +601,10 @@ public class CDCBFrame extends javax.swing.JFrame {
     private void naabOutputFileBrowser(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_naabOutputFileBrowser
         int returnVal = this.jExcelChooser.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File file = jFileChooser.getSelectedFile();
+            File file = jExcelChooser.getSelectedFile();
             try {
               // What to do with the file, e.g. display it in a TextArea
-                this.OutputTextField.setText(file.getAbsolutePath());
+                this.naabConvertOutField.setText(file.getAbsolutePath());
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this.dialogFrame, "Could not open Eval file for reading!");
             }
@@ -645,7 +646,12 @@ public class CDCBFrame extends javax.swing.JFrame {
         
         joiner join = new joiner(this.naabRefFileTextField.getText(), this.naabQueryFileTextField.getText(),
                 this.naabConvertOutField.getText(), refIdx, querIdx, RefHead, QuerHead);
-        
+        try {
+            join.doInBackground();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this.dialogFrame, "Ran into an error! " + ex.getMessage());
+        }
+        /*
         try {
             SwingUtilities.invokeLater(() -> {
                 join.execute();
@@ -658,7 +664,7 @@ public class CDCBFrame extends javax.swing.JFrame {
         while(join.getState() != StateValue.DONE){
             // Wait
         }
-        
+        */
         log.log(Level.INFO, "Completed Join routine");
     }//GEN-LAST:event_naabFileJoinRun
 

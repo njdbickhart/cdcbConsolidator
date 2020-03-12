@@ -210,7 +210,7 @@ public class NAABJoinFile {
             if(this.hasHeader){
                 line = input.readLine();
                 String[] segs = line.split("[\\t,]");
-                this.header = new String[segs.length - 1];
+                this.header = new String[segs.length];
                 for(int x = 0; x < segs.length; x++){
                     if(x == this.indexCol)
                         continue;
@@ -252,17 +252,18 @@ public class NAABJoinFile {
         if(! rowIterator.hasNext())
             throw new IOException("It seems like the excel worksheet is empty! Could not find data!");
         
+        log.log(Level.INFO, "Starting header loading");
         if(this.hasHeader){
             XSSFRow hrow = (XSSFRow) rowIterator.next();
             short rowNum = hrow.getLastCellNum();
-            this.header = new String[rowNum - 1];
+            this.header = new String[rowNum];
             for(int x = 0; x < rowNum; x++){
                 if(x == this.indexCol)
                     continue;
                 this.header[x] = hrow.getCell(x, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK).toString();
             }
         }
-        
+        log.log(Level.INFO, "Header loaded. Has: " + this.header.length + " columns.");
         boolean hdealt = (this.hasHeader);
         while(rowIterator.hasNext()){
             XSSFRow row = (XSSFRow) rowIterator.next();
@@ -274,8 +275,10 @@ public class NAABJoinFile {
             
             short rowNum = row.getLastCellNum();
             this.colNum = (int) rowNum - 1;
-            if(rowNum < this.indexCol)
+            if(rowNum < this.indexCol){
+                log.log(Level.SEVERE, "Error with index column entry! Expected index at: " + this.indexCol + " But found: " + rowNum + " rows!");
                 throw new IOException("This worksheet (" + this.fileName.getFileName() + ") did not have a column: " + (this.indexCol + 1) + ". Was the data truncated?");
+            }
             seventeenByte idxEntry = new seventeenByte(row.getCell(indexCol, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL).toString());
             this.data.put(idxEntry, new ArrayList<>());
             
@@ -285,6 +288,7 @@ public class NAABJoinFile {
                 this.data.get(idxEntry).add(row.getCell(x, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL).toString());
             }
         }
+        log.log(Level.INFO, "Finished loading excel file!");
         file.close();
         this.setUsed();
         return 1;
@@ -292,9 +296,11 @@ public class NAABJoinFile {
     
     private void checkFileType() throws IOException{
         String type = Files.probeContentType(this.fileName).substring(0, 4);
-        if("text".equals(type))
+        log.log(Level.INFO, "File content type: " + type);
+        String fstring = this.fileName.getFileName().toString();
+        if("text".equals(type) || fstring.endsWith(".csv") || fstring.endsWith(".tsv") || fstring.endsWith(".tab"))
             this.fileType = FType.TEXT;
-        else if(this.fileName.getFileName().endsWith(".xlsx"))
+        else if(fstring.endsWith(".xlsx"))
             this.fileType = FType.XLSX;
         else
             throw new IOException("File type and extension could not be discovered for file: " + this.fileName.getFileName());
