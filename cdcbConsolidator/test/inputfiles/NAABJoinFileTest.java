@@ -6,7 +6,9 @@
 package inputfiles;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,13 +40,22 @@ public class NAABJoinFileTest {
     @Test
     public void testWriteOutFile() throws Exception {
         System.out.println("writeOutFile");
-        String output = "";
-        NAABJoinFile instance = null;
-        int expResult = 0;
-        int result = instance.writeOutFile(output);
+        String reffile = "test" + ls + "inputfiles" + ls + "test_reference.xlsx";
+        String testfile = "test" + ls + "inputfiles" + ls + "test_query.csv";
+        NAABJoinFile comp = new NAABJoinFile(1, reffile, true);
+        int lastcol = comp.loadFile(0);
+        NAABJoinFile instance = new NAABJoinFile(1, testfile, true);
+        instance.loadFile(lastcol);
+        int expResult = 1;
+        int result = comp.mergeJoinFile(instance);
         assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        System.out.println("Merged successfully");
+        assertEquals(expResult, result);
+        
+        System.out.println("Writing to output file");
+        String outfile = "test" + ls + "inputfiles" + ls + "test_output.xlsx";
+        result = comp.writeOutFile(outfile);
+        assertEquals(expResult, result);
     }
 
     /**
@@ -74,13 +85,24 @@ public class NAABJoinFileTest {
     @Test
     public void testMergeJoinFile() throws Exception {
         System.out.println("mergeJoinFile");
-        NAABJoinFile comp = null;
-        NAABJoinFile instance = null;
-        int expResult = 0;
-        int result = instance.mergeJoinFile(comp);
+        seventeenByte tkey = new seventeenByte("HO840M003137164602");
+        String reffile = "test" + ls + "inputfiles" + ls + "test_reference.xlsx";
+        String testfile = "test" + ls + "inputfiles" + ls + "test_query.csv";
+        NAABJoinFile comp = new NAABJoinFile(1, reffile, true);
+        int lastcol = comp.loadFile(0);
+        NAABJoinFile instance = new NAABJoinFile(1, testfile, true);
+        instance.loadFile(lastcol);
+        int expResult = 1;
+        int result = comp.mergeJoinFile(instance);
         assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        System.out.println("Merged successfully");
+        
+        List<String> columns = comp.getData(tkey);
+        System.out.println(StrUtils.StrArray.Join(columns, "\t"));
+        System.out.println(columns.get(1));
+        assertEquals(columns.get(0), "HOCAN000012609177");
+        assertEquals(columns.get(11), "20180918");
+        assertEquals(columns.get(17), "135099");
     }
 
     /**
@@ -89,12 +111,20 @@ public class NAABJoinFileTest {
     @Test
     public void testGetHeader() {
         System.out.println("getHeader");
-        NAABJoinFile instance = null;
-        String[] expResult = null;
+        String fname = "test" + ls + "inputfiles" + ls + "test_reference.xlsx";
+        NAABJoinFile instance = new NAABJoinFile(1, fname, true);
+        String[] expResult = {"SIRE ID", "DAM ID", "MGS", "Birth", "Name", 
+            "Gene-BL", "Gene-CV", "Gene-BY", "Gene-MF", "Gene-HCD", 
+            "NAAB Code"};
+        try {
+            instance.loadFile(0);
+        } catch (IOException ex) {
+            Logger.getLogger(NAABJoinFileTest.class.getName()).log(Level.SEVERE, "TestGetHeader", ex);
+        }
         String[] result = instance.getHeader();
+        System.out.println(StrUtils.StrArray.Join(expResult, "\t"));
+        System.out.println(StrUtils.StrArray.Join(result, "\t"));
         assertArrayEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
     }
 
     

@@ -666,6 +666,7 @@ public class CDCBFrame extends javax.swing.JFrame {
         }
         */
         log.log(Level.INFO, "Completed Join routine");
+        JOptionPane.showMessageDialog(this.dialogFrame, "Successfully wrote to output file!");
     }//GEN-LAST:event_naabFileJoinRun
 
     private class joiner extends SwingWorker<Void, Void>{
