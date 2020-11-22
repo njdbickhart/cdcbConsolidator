@@ -12,14 +12,42 @@ import java.util.Arrays;
  * @author dbickhart
  */
 public class seventeenByte {
+
+    /**
+     *
+     */
     protected final String original;
     private boolean converted = false;
+
+    /**
+     *
+     */
     protected char[] breed;
+
+    /**
+     *
+     */
     protected char[] country;
+
+    /**
+     *
+     */
     protected char sex;
+
+    /**
+     *
+     */
     protected char[] val;
+
+    /**
+     *
+     */
     protected invalidCode code;
     
+    /**
+     *
+     * @param original
+     */
     public seventeenByte(String original){
         this.original = original;
         this.conversion();
@@ -28,10 +56,21 @@ public class seventeenByte {
     /*
     TODO: Change this based on feedback if Japan changes the numbers too!
     */
+
+    /**
+     *
+     * @param obj
+     * @return boolean if the value is equivalent
+     */
+
     public boolean equals(seventeenByte obj){
         return this.original.equals(obj.original);
     }
     
+    /**
+     *
+     * @return
+     */
     public boolean validate(){
         boolean isValid = true;
         if(!converted)
@@ -39,6 +78,10 @@ public class seventeenByte {
         return isValid;
     }
     
+    /**
+     *
+     * @return
+     */
     public invalidCode getCode(){
         return this.code;
     }
@@ -85,6 +128,10 @@ public class seventeenByte {
         return true;
     }
     
+    /**
+     *
+     * @return
+     */
     @Override
     public int hashCode(){
         int result = 1; 
@@ -92,6 +139,11 @@ public class seventeenByte {
         return result;
     }
 
+    /**
+     *
+     * @param obj
+     * @return
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -110,5 +162,38 @@ public class seventeenByte {
         return Arrays.equals(this.val, other.val);
     }
     
-    public enum invalidCode {VALID, BREEDERROR, COUNTRY, IDERROR, SEXCODE, LENGTH};
+    /**
+     *
+     */
+    public enum invalidCode { 
+
+        /**
+         *
+         */
+        VALID, 
+
+        /**
+         *
+         */
+        BREEDERROR, 
+
+        /**
+         *
+         */
+        COUNTRY, 
+
+        /**
+         *
+         */
+        IDERROR, 
+
+        /**
+         *
+         */
+        SEXCODE, 
+
+        /**
+         *
+         */
+        LENGTH};
 }

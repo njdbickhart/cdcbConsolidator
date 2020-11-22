@@ -61,9 +61,10 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         try(BufferedReader input = Files.newBufferedReader(Paths.get(file), Charset.defaultCharset())){
             this.tempStore = new RandomAccessFile(this.tempFile, "rw");
             String line = null;
-            for(int x = 0; x < 2; x++)
-                input.readLine(); // Clear header
+            
             while((line = input.readLine()) != null){
+                if(line.startsWith("#"))
+                    continue; // Clear header
                 String[] segs = line.trim().split(delimiter, -1);
                 if(segs.length -1 < indexCol || segs.length - 1 < dataHead){
                     log.log(Level.WARNING, "String parsing had fewer columns than expected: " + line);
@@ -90,7 +91,7 @@ public abstract class BufferedFileDBReader <T extends AnimalEntry>{
         return true;
     }
 
-    private void writeToDisk() {
+    protected void writeToDisk() {
         log.log(Level.FINEST, "Spilling to disk");
         this.data.entrySet().stream()
                 .filter(s -> s.getValue().isComplete())
